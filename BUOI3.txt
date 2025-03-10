@@ -1,0 +1,64 @@
+Transactions:
+Khái niệm đơn giản: Transaction giống như một gói công việc "hoàn thành tất cả hoặc không làm gì cả". Nếu một phần thất bại, tất cả sẽ được hoàn tác.
+Ví dụ thực tế: Khi bạn rút tiền ATM:
+sqlCopyBEGIN TRANSACTION;
+    -- Kiểm tra tài khoản có đủ tiền không
+    -- Trừ tiền từ tài khoản
+    -- Đếm và xuất tiền từ máy ATM
+    -- Ghi nhận giao dịch vào lịch sử
+COMMIT;
+Nếu máy ATM hết tiền giữa chừng, giao dịch sẽ ROLLBACK và số dư tài khoản bạn không bị trừ.
+-----------------------------------------------------------------------------------------------
+Procedure:
+Khái niệm đơn giản: Procedure là một "công thức nấu ăn" được lưu sẵn trong cơ sở dữ liệu. Thay vì phải viết lại nhiều bước phức tạp, bạn chỉ cần gọi tên công thức.
+Ví dụ thực tế: Thủ tục kiểm tra điểm trung bình và xếp loại học sinh:
+sqlCopyCREATE PROCEDURE XepLoaiHocSinh
+    @MaHocSinh INT
+AS
+BEGIN
+    DECLARE @DiemTB FLOAT;
+    
+    -- Tính điểm trung bình
+    SELECT @DiemTB = AVG(Diem) FROM BangDiem WHERE MaHocSinh = @MaHocSinh;
+    
+    -- Xếp loại
+    IF @DiemTB >= 8.0 PRINT 'Giỏi';
+    ELSE IF @DiemTB >= 7.0 PRINT 'Khá';
+    ELSE IF @DiemTB >= 5.0 PRINT 'Trung bình';
+    ELSE PRINT 'Yếu';
+END;
+Gọi thủ tục:
+sqlCopyEXEC XepLoaiHocSinh @MaHocSinh = 123;
+----------------------------------------------------------------------------------------------
+Trigger:
+Khái niệm đơn giản: Trigger giống như "phản xạ tự động" của cơ sở dữ liệu. Khi điều gì đó xảy ra (thêm/sửa/xóa dữ liệu), trigger tự động phản ứng.
+Ví dụ thực tế: Khi khách hàng đặt hàng, tự động giảm số lượng hàng trong kho:
+sqlCopyCREATE TRIGGER CapNhatKho
+ON DonHang
+AFTER INSERT
+AS
+BEGIN
+    -- Khi có đơn hàng mới, giảm số lượng sản phẩm trong kho
+    UPDATE Kho
+    SET SoLuong = Kho.SoLuong - DonHang.SoLuong
+    FROM Kho JOIN inserted DonHang ON Kho.MaSP = DonHang.MaSP;
+    
+    -- Nếu số lượng giảm dưới 10, tự động gửi thông báo
+    IF EXISTS (SELECT * FROM Kho WHERE SoLuong < 10)
+    BEGIN
+        PRINT 'Cảnh báo: Một số sản phẩm sắp hết hàng!';
+    END;
+END;
+---------------------------------------------------------------------------------------------
+Index:
+Khái niệm đơn giản: Index giống như mục lục sách. Thay vì đọc từng trang để tìm thông tin, bạn xem mục lục và đi thẳng đến trang cần tìm.
+Ví dụ thực tế: Tạo index cho cột số điện thoại trong bảng khách hàng:
+sqlCopyCREATE INDEX idx_sdt ON KhachHang(SoDienThoai);
+Trước khi có index, tìm khách hàng theo số điện thoại:
+sqlCopy-- Phải quét qua tất cả bản ghi (có thể hàng triệu người)
+SELECT * FROM KhachHang WHERE SoDienThoai = '0912345678';
+Sau khi có index:
+
+Hệ thống nhanh chóng tìm đến bản ghi có SoDienThoai = '0912345678'
+Giống như bạn tìm từ khóa trong mục lục sách và đi thẳng đến trang đó
+Tốc độ tìm kiếm nhanh hơn nhiều, đặc biệt với bảng dữ liệu lớn
